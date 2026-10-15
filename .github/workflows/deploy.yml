@@ -1,0 +1,46 @@
+name: CI Pipeline
+
+# Trigger workflow on pushes and PRs to master, plus allow manual runs
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone the repository onto the runner machine
+      - name: 1. Checkout repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js runtime and cache npm packages for faster runs
+      - name: 2. Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Step 3: Clean install dependencies using package-lock.json
+      - name: 3. Install dependencies
+        run: npm ci
+
+      # Step 4: Run oxlint to verify code quality and catch syntax/logic errors
+      - name: 4. Run linter
+        run: npm run lint
+
+      # Step 5: Compile React + Vite application into static files (dist/)
+      - name: 5. Build production bundle
+        run: npm run build
+
+      # Step 6: Save the built output (dist/) as an artifact in GitHub Actions
+      - name: 6. Upload production build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: dist/
+          retention-days: 7
